@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+import AuthPage from "./AuthPage";
 import SearchBar from "../components/Search/SearchBar";
 import JobCard from "../components/Jobs/JobCard";
 import CompanyCard from "../components/Companies/CompanyCard";
@@ -14,6 +15,11 @@ import {
 } from "lucide-react";
 
 const HomePage: React.FC = () => {
+  const [showAuth, setShowAuth] = useState(false);
+  const [authType, setAuthType] = useState<"jobseeker" | "employer">(
+    "jobseeker"
+  );
+
   const featuredJobs = [
     {
       id: 1,
@@ -99,6 +105,43 @@ const HomePage: React.FC = () => {
 
   return (
     <>
+      {/* Add login/register buttons */}
+      <div className="flex justify-end p-4 bg-white">
+        <button
+          className="bg-joblyn-blue text-white px-4 py-2 rounded mr-2 font-bold"
+          onClick={() => {
+            setAuthType("jobseeker");
+            setShowAuth(true);
+          }}
+        >
+          Jobseeker Login/Register
+        </button>
+        <button
+          className="bg-joblyn-blue text-white px-4 py-2 rounded font-bold"
+          onClick={() => {
+            setAuthType("employer");
+            setShowAuth(true);
+          }}
+        >
+          Employer Login/Register
+        </button>
+      </div>
+
+      {/* Show AuthPage modal */}
+      {showAuth && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded shadow-lg relative">
+            <button
+              className="absolute top-2 right-2 text-gray-500 font-bold text-xl"
+              onClick={() => setShowAuth(false)}
+            >
+              ×
+            </button>
+            <AuthPage initialType={authType} />
+          </div>
+        </div>
+      )}
+
       <SearchBar />
 
       {/* Stats Section */}
@@ -265,5 +308,3 @@ const HomePage: React.FC = () => {
 };
 
 export default HomePage;
-
-

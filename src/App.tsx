@@ -1,11 +1,12 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Header from './components/Layout/Header';
-import Footer from './components/Layout/Footer';
-import HomePage from './pages/HomePage';
-import JobsPage from './pages/JobsPage';
-import CompaniesPage from './pages/CompaniesPage';
-import ProfilePage from './pages/ProfilePage';
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Header from "./components/Layout/Header";
+import Footer from "./components/Layout/Footer";
+import HomePage from "./pages/HomePage";
+import JobsPage from "./pages/JobsPage";
+import CompaniesPage from "./pages/CompaniesPage";
+import ProfilePage from "./pages/ProfilePage";
+import EmployerDashboard from "./pages/EmployerDashboard";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
             <Route path="/jobs" element={<JobsPage />} />
             <Route path="/companies" element={<CompaniesPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/employer-dashboard" element={<EmployerDashboard />} />
           </Routes>
         </main>
         <Footer />
