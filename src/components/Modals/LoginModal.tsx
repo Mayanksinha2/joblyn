@@ -53,6 +53,8 @@ const LoginModal: React.FC<LoginModalProps> = ({
           onClose();
           if (loginType === "employer") {
             navigate("/employer-dashboard");
+          } else if (loginType === "jobseeker") {
+            navigate("/jobseeker-dashboard");
           }
         }, 1000);
       } else {

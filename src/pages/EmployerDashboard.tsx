@@ -56,11 +56,24 @@ const EmployerDashboard: React.FC = () => {
     });
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("joblyn_loggedin");
+    navigate("/");
+  };
+
   return (
     <div className="max-w-2xl mx-auto mt-10 p-6 bg-white rounded shadow">
-      <h2 className="text-2xl font-bold mb-4 text-joblyn-blue">
-        Employer Dashboard
-      </h2>
+      <div className="flex justify-between items-center mb-4">
+        <button
+          onClick={() => navigate("/")}
+          className="px-4 py-2 rounded border border-joblyn-blue text-joblyn-blue bg-gray-100 hover:bg-joblyn-blue hover:text-white font-bold transition-colors"
+        >
+          ← Back to Home
+        </button>
+        <h2 className="text-2xl font-bold text-joblyn-blue">
+          Employer Dashboard
+        </h2>
+      </div>
       <form onSubmit={handleSubmit} className="space-y-4 mb-8">
         <input
           type="text"
