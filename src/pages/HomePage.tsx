@@ -38,62 +38,64 @@ interface CompanyProfile {
   employmentType: string;
   compensationRange: string;
   candidateLocationPreferences: string;
-  // ... other optional fields
   [key: string]: string;
 }
 
 const HomePage: React.FC = () => {
   const [showAuth, setShowAuth] = useState(false);
-  const [authType, setAuthType] = useState<"jobseeker" | "employer">(
-    "jobseeker"
-  );
+  const [authType, setAuthType] = useState<"jobseeker" | "employer">("jobseeker");
   const navigate = useNavigate();
-  const [loggedIn, setLoggedIn] = useState(
-    JSON.parse(localStorage.getItem("joblyn_loggedin") || "null")
-  );
+  const [loggedIn, setLoggedIn] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("joblyn_loggedin") || "null");
+    } catch {
+      return null;
+    }
+  });
   const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(null);
   const [profileStrength, setProfileStrength] = useState(0);
 
   // Calculate profile strength
   const calculateProfileStrength = (profile: CompanyProfile): number => {
     const mandatoryFields = [
-      'companyRegisteredName', 'companyType', 'establishmentYear', 'gstDetails',
-      'address', 'officialEmail', 'phoneNumber', 'founderNames', 'industry',
-      'coreProductService', 'currentTeamSize', 'longTermVision',
-      'roleTitle', 'coreResponsibilities', 'keySkillsExperience',
-      'employmentType', 'compensationRange', 'candidateLocationPreferences'
+      "companyRegisteredName", "companyType", "establishmentYear", "gstDetails",
+      "address", "officialEmail", "phoneNumber", "founderNames", "industry",
+      "coreProductService", "currentTeamSize", "longTermVision",
+      "roleTitle", "coreResponsibilities", "keySkillsExperience",
+      "employmentType", "compensationRange", "candidateLocationPreferences"
     ];
-    
-    const optionalFields = Object.keys(profile).filter(
-      key => !mandatoryFields.includes(key)
-    );
-    
+    const optionalFields = Object.keys(profile).filter(key => !mandatoryFields.includes(key));
     const filledMandatory = mandatoryFields.filter(field => {
       const value = profile[field];
       return value != null && value.toString().trim() !== "";
     }).length;
-    
     const filledOptional = optionalFields.filter(field => {
       const value = profile[field];
       return value != null && value.toString().trim() !== "";
     }).length;
-    
-    // Weighted calculation: 75% for mandatory, 25% for optional
     const mandatoryScore = (filledMandatory / mandatoryFields.length) * 75;
     const optionalScore = optionalFields.length > 0 ? (filledOptional / optionalFields.length) * 25 : 0;
-    
     return Math.round(mandatoryScore + optionalScore);
   };
 
   // Listen for login/logout changes and load company profile
   useEffect(() => {
     const handleStorage = () => {
-      const loginData = JSON.parse(localStorage.getItem("joblyn_loggedin") || "null");
+      let loginData;
+      try {
+        loginData = JSON.parse(localStorage.getItem("joblyn_loggedin") || "null");
+      } catch {
+        loginData = null;
+      }
       setLoggedIn(loginData);
-      
-      // Load company profile if employer is logged in
+
       if (loginData?.type === "employer") {
-        const savedProfile = JSON.parse(localStorage.getItem("joblyn_company_profile") || "null");
+        let savedProfile;
+        try {
+          savedProfile = JSON.parse(localStorage.getItem("joblyn_company_profile") || "null");
+        } catch {
+          savedProfile = null;
+        }
         if (savedProfile) {
           setCompanyProfile(savedProfile);
           setProfileStrength(calculateProfileStrength(savedProfile));
@@ -106,11 +108,7 @@ const HomePage: React.FC = () => {
         setProfileStrength(0);
       }
     };
-    
-    // Initial load
     handleStorage();
-    
-    // Listen for storage changes
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
   }, []);
@@ -210,6 +208,15 @@ const HomePage: React.FC = () => {
     { name: "Healthcare", count: "45K+", icon: "🏥" },
   ];
 
+  // Helper for jobs posted stat
+  const getPostedJobsCount = () => {
+    try {
+      return JSON.parse(localStorage.getItem("joblyn_posted_jobs") || "[]").length;
+    } catch {
+      return 0;
+    }
+  };
+
   return (
     <div className="flex">
       {/* Sidebar */}
@@ -238,7 +245,7 @@ const HomePage: React.FC = () => {
                 <h2 className="text-lg font-bold text-blue-600 mb-4">My Profile</h2>
                 <a
                   href="/jobseeker-dashboard"
-                  className="w-full px-4 py-3 rounded-lg border border-blue-600 text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white font-semibold transition-colors flex items-center justify-be[...]
+                  className="w-full px-4 py-3 rounded-lg border border-blue-600 text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white font-semibold transition-colors flex items-center justify-between"
                 >
                   <span>Jobseeker Dashboard</span>
                   <ChevronRight size={16} />
@@ -250,7 +257,7 @@ const HomePage: React.FC = () => {
             {loggedIn.type === "employer" && (
               <div className="space-y-4">
                 <h2 className="text-lg font-bold text-blue-600 mb-4">Startup Dashboard</h2>
-                
+
                 {/* Profile Completion Status */}
                 <div className={`p-4 rounded-lg ${getProfileStrengthBg()} border`}>
                   <div className="flex items-center justify-between mb-2">
@@ -259,18 +266,18 @@ const HomePage: React.FC = () => {
                       {profileStrength}%
                     </span>
                   </div>
-                  
+
                   {/* Progress Bar */}
                   <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
                     <div
                       className={`h-2 rounded-full transition-all duration-300 ${
-                        profileStrength >= 75 ? 'bg-green-500' : 
-                        profileStrength >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                        profileStrength >= 75 ? "bg-green-500" :
+                        profileStrength >= 50 ? "bg-yellow-500" : "bg-red-500"
                       }`}
                       style={{ width: `${profileStrength}%` }}
-                    ></div>
+                    />
                   </div>
-                  
+
                   {/* Status Message */}
                   {profileStrength >= 75 ? (
                     <div className="flex items-center text-green-600 text-sm">
@@ -323,15 +330,15 @@ const HomePage: React.FC = () => {
                 <div className="space-y-2">
                   <a
                     href="/employer-dashboard"
-                    className="w-full px-4 py-3 rounded-lg border border-blue-600 text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white font-semibold transition-colors flex items-center justify-[...]
+                    className="w-full px-4 py-3 rounded-lg border border-blue-600 text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white font-semibold transition-colors flex items-center justify-between"
                   >
                     <div className="flex items-center">
                       <Settings size={16} className="mr-2" />
-                      {profileStrength >= 75 ? 'Employer Dashboard' : 'Complete Profile'}
+                      {profileStrength >= 75 ? "Employer Dashboard" : "Complete Profile"}
                     </div>
                     <ChevronRight size={16} />
                   </a>
-                  
+
                   {profileStrength >= 75 && (
                     <div className="mt-2 p-3 bg-green-50 rounded-lg border border-green-200">
                       <div className="flex items-center text-green-700 text-sm font-medium mb-1">
@@ -352,7 +359,7 @@ const HomePage: React.FC = () => {
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div className="text-center p-2 bg-white rounded">
                         <div className="font-bold text-blue-600">
-                          {JSON.parse(localStorage.getItem("joblyn_posted_jobs") || "[]").length}
+                          {getPostedJobsCount()}
                         </div>
                         <div className="text-gray-600">Jobs Posted</div>
                       </div>
@@ -388,8 +395,6 @@ const HomePage: React.FC = () => {
 
       {/* Main Content */}
       <div className={`flex-1 ${loggedIn ? "ml-80" : ""}`}>
-        {/* REMOVED DUPLICATE Login/Register buttons below navbar */}
-
         {/* Show AuthPage modal */}
         {showAuth && (
           <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
@@ -451,9 +456,7 @@ const HomePage: React.FC = () => {
                 <h2 className="text-3xl font-bold text-gray-800 mb-2">
                   Featured Jobs
                 </h2>
-                <p className="text-gray-600">
-                  Hand-picked opportunities from top companies
-                </p>
+                <p className="text-gray-600">Hand-picked opportunities from top companies</p>
               </div>
               <a
                 href="/jobs"
@@ -463,7 +466,7 @@ const HomePage: React.FC = () => {
               </a>
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredJobs.map((job) => (
+              {featuredJobs.map(job => (
                 <JobCard key={job.id} {...job} />
               ))}
             </div>
@@ -483,12 +486,8 @@ const HomePage: React.FC = () => {
                   className="bg-gray-50 rounded-lg p-6 text-center hover:shadow-md transition-shadow cursor-pointer"
                 >
                   <div className="text-4xl mb-3">{category.icon}</div>
-                  <h3 className="font-semibold text-gray-800">
-                    {category.name}
-                  </h3>
-                  <p className="text-gray-600 text-sm mt-1">
-                    {category.count} Jobs
-                  </p>
+                  <h3 className="font-semibold text-gray-800">{category.name}</h3>
+                  <p className="text-gray-600 text-sm mt-1">{category.count} Jobs</p>
                 </div>
               ))}
             </div>
@@ -503,9 +502,7 @@ const HomePage: React.FC = () => {
                 <h2 className="text-3xl font-bold text-gray-800 mb-2">
                   Top Companies Hiring
                 </h2>
-                <p className="text-gray-600">
-                  Join India's leading organizations
-                </p>
+                <p className="text-gray-600">Join India's leading organizations</p>
               </div>
               <a
                 href="/companies"
@@ -515,7 +512,7 @@ const HomePage: React.FC = () => {
               </a>
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {topCompanies.map((company) => (
+              {topCompanies.map(company => (
                 <CompanyCard key={company.id} {...company} />
               ))}
             </div>
@@ -534,38 +531,24 @@ const HomePage: React.FC = () => {
                   <Sparkles className="w-10 h-10 text-blue-600" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Resume Writing</h3>
-                <p className="text-gray-600 mb-4">
-                  Get a professionally written resume that stands out
-                </p>
-                <button className="text-blue-600 hover:underline font-medium">
-                  Learn More →
-                </button>
+                <p className="text-gray-600 mb-4">Get a professionally written resume that stands out</p>
+                <button className="text-blue-600 hover:underline font-medium">Learn More →</button>
               </div>
               <div className="text-center">
                 <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Target className="w-10 h-10 text-green-600" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">
-                  Priority Applicant
-                </h3>
-                <p className="text-gray-600 mb-4">
-                  Be a priority applicant & increase your chance of selection
-                </p>
-                <button className="text-blue-600 hover:underline font-medium">
-                  Learn More →
-                </button>
+                <h3 className="text-xl font-semibold mb-2">Priority Applicant</h3>
+                <p className="text-gray-600 mb-4">Be a priority applicant & increase your chance of selection</p>
+                <button className="text-blue-600 hover:underline font-medium">Learn More →</button>
               </div>
               <div className="text-center">
                 <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <BookOpen className="w-10 h-10 text-orange-600" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Career Guidance</h3>
-                <p className="text-gray-600 mb-4">
-                  Get personalized career guidance from industry experts
-                </p>
-                <button className="text-blue-600 hover:underline font-medium">
-                  Learn More →
-                </button>
+                <p className="text-gray-600 mb-4">Get personalized career guidance from industry experts</p>
+                <button className="text-blue-600 hover:underline font-medium">Learn More →</button>
               </div>
             </div>
           </div>
