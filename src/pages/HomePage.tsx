@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import AuthPage from "./AuthPage";
 import SearchBar from "../components/Search/SearchBar";
 import JobCard from "../components/Jobs/JobCard";
@@ -12,8 +12,35 @@ import {
   Sparkles,
   Target,
   BookOpen,
+  CheckCircle,
+  AlertCircle,
+  User,
+  Settings,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+
+interface CompanyProfile {
+  companyRegisteredName: string;
+  companyType: string;
+  establishmentYear: string;
+  gstDetails: string;
+  address: string;
+  officialEmail: string;
+  phoneNumber: string;
+  founderNames: string;
+  industry: string;
+  coreProductService: string;
+  currentTeamSize: string;
+  longTermVision: string;
+  roleTitle: string;
+  coreResponsibilities: string;
+  keySkillsExperience: string;
+  employmentType: string;
+  compensationRange: string;
+  candidateLocationPreferences: string;
+  // ... other optional fields
+  [key: string]: string;
+}
 
 const HomePage: React.FC = () => {
   const [showAuth, setShowAuth] = useState(false);
@@ -24,17 +51,81 @@ const HomePage: React.FC = () => {
   const [loggedIn, setLoggedIn] = useState(
     JSON.parse(localStorage.getItem("joblyn_loggedin") || "null")
   );
+  const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(null);
+  const [profileStrength, setProfileStrength] = useState(0);
 
-  // Listen for login/logout changes
-  React.useEffect(() => {
+  // Calculate profile strength
+  const calculateProfileStrength = (profile: CompanyProfile): number => {
+    const mandatoryFields = [
+      'companyRegisteredName', 'companyType', 'establishmentYear', 'gstDetails',
+      'address', 'officialEmail', 'phoneNumber', 'founderNames', 'industry',
+      'coreProductService', 'currentTeamSize', 'longTermVision',
+      'roleTitle', 'coreResponsibilities', 'keySkillsExperience',
+      'employmentType', 'compensationRange', 'candidateLocationPreferences'
+    ];
+    
+    const optionalFields = Object.keys(profile).filter(
+      key => !mandatoryFields.includes(key)
+    );
+    
+    const filledMandatory = mandatoryFields.filter(field => {
+      const value = profile[field];
+      return value != null && value.toString().trim() !== "";
+    }).length;
+    
+    const filledOptional = optionalFields.filter(field => {
+      const value = profile[field];
+      return value != null && value.toString().trim() !== "";
+    }).length;
+    
+    // Weighted calculation: 75% for mandatory, 25% for optional
+    const mandatoryScore = (filledMandatory / mandatoryFields.length) * 75;
+    const optionalScore = optionalFields.length > 0 ? (filledOptional / optionalFields.length) * 25 : 0;
+    
+    return Math.round(mandatoryScore + optionalScore);
+  };
+
+  // Listen for login/logout changes and load company profile
+  useEffect(() => {
     const handleStorage = () => {
-      setLoggedIn(
-        JSON.parse(localStorage.getItem("joblyn_loggedin") || "null")
-      );
+      const loginData = JSON.parse(localStorage.getItem("joblyn_loggedin") || "null");
+      setLoggedIn(loginData);
+      
+      // Load company profile if employer is logged in
+      if (loginData?.type === "employer") {
+        const savedProfile = JSON.parse(localStorage.getItem("joblyn_company_profile") || "null");
+        if (savedProfile) {
+          setCompanyProfile(savedProfile);
+          setProfileStrength(calculateProfileStrength(savedProfile));
+        } else {
+          setCompanyProfile(null);
+          setProfileStrength(0);
+        }
+      } else {
+        setCompanyProfile(null);
+        setProfileStrength(0);
+      }
     };
+    
+    // Initial load
+    handleStorage();
+    
+    // Listen for storage changes
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
   }, []);
+
+  const getProfileStrengthColor = () => {
+    if (profileStrength >= 75) return "text-green-600";
+    if (profileStrength >= 50) return "text-yellow-600";
+    return "text-red-600";
+  };
+
+  const getProfileStrengthBg = () => {
+    if (profileStrength >= 75) return "bg-green-100";
+    if (profileStrength >= 50) return "bg-yellow-100";
+    return "bg-red-100";
+  };
 
   const featuredJobs = [
     {
@@ -124,38 +215,170 @@ const HomePage: React.FC = () => {
       {/* Sidebar */}
       {loggedIn && (
         <aside
-          className="w-64 fixed left-0 top-16 bg-white shadow-lg flex flex-col justify-between"
-          style={{ height: "calc(100vh - 4rem)", zIndex: 20 }} // 4rem = 64px header
+          className="w-80 fixed left-0 top-16 bg-white shadow-lg flex flex-col justify-between overflow-y-auto"
+          style={{ height: "calc(100vh - 4rem)", zIndex: 20 }}
         >
           <div className="p-6">
-            <h2 className="text-xl font-bold mb-6 text-joblyn-blue">
-              My Profile
-            </h2>
+            {/* User Profile Header */}
+            <div className="flex items-center mb-6 pb-4 border-b border-gray-200">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                <User className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-800">
+                  {loggedIn.type === "employer" ? "Employer" : "Job Seeker"}
+                </h3>
+                <p className="text-sm text-gray-600">{loggedIn.email}</p>
+              </div>
+            </div>
+
+            {/* Jobseeker Dashboard */}
             {loggedIn.type === "jobseeker" && (
-              <a
-                href="/jobseeker-dashboard"
-                className="mb-4 px-4 py-2 rounded border border-joblyn-blue text-joblyn-blue bg-gray-100 hover:bg-joblyn-blue hover:text-white font-bold transition-colors block"
-              >
-                Jobseeker Dashboard
-              </a>
+              <div className="space-y-3">
+                <h2 className="text-lg font-bold text-blue-600 mb-4">My Profile</h2>
+                <a
+                  href="/jobseeker-dashboard"
+                  className="w-full px-4 py-3 rounded-lg border border-blue-600 text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white font-semibold transition-colors flex items-center justify-between"
+                >
+                  <span>Jobseeker Dashboard</span>
+                  <ChevronRight size={16} />
+                </a>
+              </div>
             )}
+
+            {/* Employer Dashboard with Profile Status */}
             {loggedIn.type === "employer" && (
-              <a
-                href="/employer-dashboard"
-                className="mb-4 px-4 py-2 rounded border border-joblyn-blue text-joblyn-blue bg-gray-100 hover:bg-joblyn-blue hover:text-white font-bold transition-colors block"
-              >
-                Employer Dashboard
-              </a>
+              <div className="space-y-4">
+                <h2 className="text-lg font-bold text-blue-600 mb-4">Startup Dashboard</h2>
+                
+                {/* Profile Completion Status */}
+                <div className={`p-4 rounded-lg ${getProfileStrengthBg()} border`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold text-gray-800">Profile Completion</h3>
+                    <span className={`text-lg font-bold ${getProfileStrengthColor()}`}>
+                      {profileStrength}%
+                    </span>
+                  </div>
+                  
+                  {/* Progress Bar */}
+                  <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
+                    <div
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        profileStrength >= 75 ? 'bg-green-500' : 
+                        profileStrength >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                      }`}
+                      style={{ width: `${profileStrength}%` }}
+                    ></div>
+                  </div>
+                  
+                  {/* Status Message */}
+                  {profileStrength >= 75 ? (
+                    <div className="flex items-center text-green-600 text-sm">
+                      <CheckCircle size={14} className="mr-1" />
+                      Profile Complete - Ready to post jobs!
+                    </div>
+                  ) : (
+                    <div className="flex items-center text-orange-600 text-sm">
+                      <AlertCircle size={14} className="mr-1" />
+                      Complete profile to unlock job posting
+                    </div>
+                  )}
+                </div>
+
+                {/* Company Details (if profile exists) */}
+                {companyProfile && companyProfile.companyRegisteredName && (
+                  <div className="bg-gray-50 p-4 rounded-lg border">
+                    <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
+                      <Building2 size={16} className="mr-2" />
+                      Company Details
+                    </h4>
+                    <div className="space-y-2 text-sm">
+                      <div>
+                        <span className="font-medium text-gray-600">Name:</span>
+                        <p className="text-gray-800">{companyProfile.companyRegisteredName}</p>
+                      </div>
+                      {companyProfile.industry && (
+                        <div>
+                          <span className="font-medium text-gray-600">Industry:</span>
+                          <p className="text-gray-800">{companyProfile.industry}</p>
+                        </div>
+                      )}
+                      {companyProfile.currentTeamSize && (
+                        <div>
+                          <span className="font-medium text-gray-600">Team Size:</span>
+                          <p className="text-gray-800">{companyProfile.currentTeamSize}</p>
+                        </div>
+                      )}
+                      {companyProfile.founderNames && (
+                        <div>
+                          <span className="font-medium text-gray-600">Founder(s):</span>
+                          <p className="text-gray-800">{companyProfile.founderNames}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="space-y-2">
+                  <a
+                    href="/employer-dashboard"
+                    className="w-full px-4 py-3 rounded-lg border border-blue-600 text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white font-semibold transition-colors flex items-center justify-between"
+                  >
+                    <div className="flex items-center">
+                      <Settings size={16} className="mr-2" />
+                      {profileStrength >= 75 ? 'Employer Dashboard' : 'Complete Profile'}
+                    </div>
+                    <ChevronRight size={16} />
+                  </a>
+                  
+                  {profileStrength >= 75 && (
+                    <div className="mt-2 p-3 bg-green-50 rounded-lg border border-green-200">
+                      <div className="flex items-center text-green-700 text-sm font-medium mb-1">
+                        <CheckCircle size={14} className="mr-1" />
+                        Job Posting Enabled
+                      </div>
+                      <p className="text-xs text-green-600">
+                        Your profile is complete! You can now post job openings and attract top talent.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Quick Stats (if profile is complete) */}
+                {profileStrength >= 75 && (
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <h4 className="font-semibold text-blue-800 mb-2">Quick Stats</h4>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="text-center p-2 bg-white rounded">
+                        <div className="font-bold text-blue-600">
+                          {JSON.parse(localStorage.getItem("joblyn_posted_jobs") || "[]").length}
+                        </div>
+                        <div className="text-gray-600">Jobs Posted</div>
+                      </div>
+                      <div className="text-center p-2 bg-white rounded">
+                        <div className="font-bold text-green-600">{profileStrength}%</div>
+                        <div className="text-gray-600">Profile Score</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </div>
-          <div className="p-6">
+
+          {/* Logout Button */}
+          <div className="p-6 border-t border-gray-200">
             <button
               onClick={() => {
                 localStorage.removeItem("joblyn_loggedin");
+                localStorage.removeItem("joblyn_company_profile");
                 setLoggedIn(null);
+                setCompanyProfile(null);
+                setProfileStrength(0);
                 navigate("/");
               }}
-              className="w-full px-4 py-2 rounded border border-red-400 text-red-500 bg-gray-100 hover:bg-red-500 hover:text-white font-bold transition-colors"
+              className="w-full px-4 py-2 rounded-lg border border-red-400 text-red-500 bg-red-50 hover:bg-red-500 hover:text-white font-semibold transition-colors"
             >
               Logout
             </button>
@@ -164,28 +387,30 @@ const HomePage: React.FC = () => {
       )}
 
       {/* Main Content */}
-      <div className={`flex-1 ${loggedIn ? "ml-64" : ""}`}>
-        {/* Add login/register buttons */}
-        <div className="flex justify-end p-4 bg-white">
-          <button
-            className="bg-joblyn-blue text-white px-4 py-2 rounded mr-2 font-bold"
-            onClick={() => {
-              setAuthType("jobseeker");
-              setShowAuth(true);
-            }}
-          >
-            Jobseeker Login/Register
-          </button>
-          <button
-            className="bg-joblyn-blue text-white px-4 py-2 rounded font-bold"
-            onClick={() => {
-              setAuthType("employer");
-              setShowAuth(true);
-            }}
-          >
-            Employer Login/Register
-          </button>
-        </div>
+      <div className={`flex-1 ${loggedIn ? "ml-80" : ""}`}>
+        {/* Login/Register buttons (only show if not logged in) */}
+        {!loggedIn && (
+          <div className="flex justify-end p-4 bg-white">
+            <button
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg mr-2 font-semibold hover:bg-blue-700 transition-colors"
+              onClick={() => {
+                setAuthType("jobseeker");
+                setShowAuth(true);
+              }}
+            >
+              Jobseeker Login/Register
+            </button>
+            <button
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+              onClick={() => {
+                setAuthType("employer");
+                setShowAuth(true);
+              }}
+            >
+              Employer Login/Register
+            </button>
+          </div>
+        )}
 
         {/* Show AuthPage modal */}
         {showAuth && (
@@ -210,7 +435,7 @@ const HomePage: React.FC = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
               <div className="text-center">
                 <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <TrendingUp className="w-8 h-8 text-joblyn-blue" />
+                  <TrendingUp className="w-8 h-8 text-blue-600" />
                 </div>
                 <h3 className="text-3xl font-bold text-gray-800">15L+</h3>
                 <p className="text-gray-600">Active Jobs</p>
@@ -254,7 +479,7 @@ const HomePage: React.FC = () => {
               </div>
               <a
                 href="/jobs"
-                className="text-joblyn-blue hover:underline flex items-center font-medium"
+                className="text-blue-600 hover:underline flex items-center font-medium"
               >
                 View All <ChevronRight size={20} />
               </a>
@@ -306,7 +531,7 @@ const HomePage: React.FC = () => {
               </div>
               <a
                 href="/companies"
-                className="text-joblyn-blue hover:underline flex items-center font-medium"
+                className="text-blue-600 hover:underline flex items-center font-medium"
               >
                 View All <ChevronRight size={20} />
               </a>
@@ -328,13 +553,13 @@ const HomePage: React.FC = () => {
             <div className="grid md:grid-cols-3 gap-8">
               <div className="text-center">
                 <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Sparkles className="w-10 h-10 text-joblyn-blue" />
+                  <Sparkles className="w-10 h-10 text-blue-600" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Resume Writing</h3>
                 <p className="text-gray-600 mb-4">
                   Get a professionally written resume that stands out
                 </p>
-                <button className="text-joblyn-blue hover:underline font-medium">
+                <button className="text-blue-600 hover:underline font-medium">
                   Learn More →
                 </button>
               </div>
@@ -348,7 +573,7 @@ const HomePage: React.FC = () => {
                 <p className="text-gray-600 mb-4">
                   Be a priority applicant & increase your chance of selection
                 </p>
-                <button className="text-joblyn-blue hover:underline font-medium">
+                <button className="text-blue-600 hover:underline font-medium">
                   Learn More →
                 </button>
               </div>
@@ -360,7 +585,7 @@ const HomePage: React.FC = () => {
                 <p className="text-gray-600 mb-4">
                   Get personalized career guidance from industry experts
                 </p>
-                <button className="text-joblyn-blue hover:underline font-medium">
+                <button className="text-blue-600 hover:underline font-medium">
                   Learn More →
                 </button>
               </div>
