@@ -238,7 +238,7 @@ const HomePage: React.FC = () => {
                 <h2 className="text-lg font-bold text-blue-600 mb-4">My Profile</h2>
                 <a
                   href="/jobseeker-dashboard"
-                  className="w-full px-4 py-3 rounded-lg border border-blue-600 text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white font-semibold transition-colors flex items-center justify-between"
+                  className="w-full px-4 py-3 rounded-lg border border-blue-600 text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white font-semibold transition-colors flex items-center justify-be[...]
                 >
                   <span>Jobseeker Dashboard</span>
                   <ChevronRight size={16} />
@@ -323,7 +323,7 @@ const HomePage: React.FC = () => {
                 <div className="space-y-2">
                   <a
                     href="/employer-dashboard"
-                    className="w-full px-4 py-3 rounded-lg border border-blue-600 text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white font-semibold transition-colors flex items-center justify-between"
+                    className="w-full px-4 py-3 rounded-lg border border-blue-600 text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white font-semibold transition-colors flex items-center justify-[...]
                   >
                     <div className="flex items-center">
                       <Settings size={16} className="mr-2" />
@@ -388,29 +388,7 @@ const HomePage: React.FC = () => {
 
       {/* Main Content */}
       <div className={`flex-1 ${loggedIn ? "ml-80" : ""}`}>
-        {/* Login/Register buttons (only show if not logged in) */}
-        {!loggedIn && (
-          <div className="flex justify-end p-4 bg-white">
-            <button
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg mr-2 font-semibold hover:bg-blue-700 transition-colors"
-              onClick={() => {
-                setAuthType("jobseeker");
-                setShowAuth(true);
-              }}
-            >
-              Jobseeker Login/Register
-            </button>
-            <button
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-              onClick={() => {
-                setAuthType("employer");
-                setShowAuth(true);
-              }}
-            >
-              Employer Login/Register
-            </button>
-          </div>
-        )}
+        {/* REMOVED DUPLICATE Login/Register buttons below navbar */}
 
         {/* Show AuthPage modal */}
         {showAuth && (
