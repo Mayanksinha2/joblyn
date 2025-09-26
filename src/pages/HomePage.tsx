@@ -12,106 +12,58 @@ import {
   Sparkles,
   Target,
   BookOpen,
-  CheckCircle,
-  AlertCircle,
-  User,
-  Settings,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-interface CompanyProfile {
-  companyRegisteredName: string;
-  companyType: string;
-  establishmentYear: string;
-  gstDetails: string;
-  address: string;
-  officialEmail: string;
-  phoneNumber: string;
-  founderNames: string;
-  industry: string;
-  coreProductService: string;
-  currentTeamSize: string;
-  longTermVision: string;
-  roleTitle: string;
-  coreResponsibilities: string;
-  keySkillsExperience: string;
-  employmentType: string;
-  compensationRange: string;
-  candidateLocationPreferences: string;
-  [key: string]: string;
-}
-
 const HomePage: React.FC = () => {
   const [showAuth, setShowAuth] = useState(false);
-  const [authType, setAuthType] = useState<"jobseeker" | "employer">("jobseeker");
+  const [authType, setAuthType] = useState<"jobseeker" | "employer">(
+    "jobseeker"
+  );
   const navigate = useNavigate();
-  const [loggedIn, setLoggedIn] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem("joblyn_loggedin") || "null");
-    } catch {
-      return null;
-    }
-  });
-  const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(null);
-  const [profileStrength, setProfileStrength] = useState(0);
+  const [loggedIn, setLoggedIn] = useState(
+    JSON.parse(localStorage.getItem("joblyn_loggedin") || "null")
+  );
 
-  // Calculate profile strength
-  const calculateProfileStrength = (profile: CompanyProfile): number => {
-    const mandatoryFields = [
-      "companyRegisteredName", "companyType", "establishmentYear", "gstDetails",
-      "address", "officialEmail", "phoneNumber", "founderNames", "industry",
-      "coreProductService", "currentTeamSize", "longTermVision",
-      "roleTitle", "coreResponsibilities", "keySkillsExperience",
-      "employmentType", "compensationRange", "candidateLocationPreferences"
-    ];
-    const optionalFields = Object.keys(profile).filter(key => !mandatoryFields.includes(key));
-    const filledMandatory = mandatoryFields.filter(field => {
-      const value = profile[field];
-      return value != null && value.toString().trim() !== "";
-    }).length;
-    const filledOptional = optionalFields.filter(field => {
-      const value = profile[field];
-      return value != null && value.toString().trim() !== "";
-    }).length;
-    const mandatoryScore = (filledMandatory / mandatoryFields.length) * 75;
-    const optionalScore = optionalFields.length > 0 ? (filledOptional / optionalFields.length) * 25 : 0;
-    return Math.round(mandatoryScore + optionalScore);
-  };
-
-  // Listen for login/logout changes and load company profile
-  useEffect(() => {
+  // Listen for login/logout changes
+  React.useEffect(() => {
     const handleStorage = () => {
-      let loginData;
-      try {
-        loginData = JSON.parse(localStorage.getItem("joblyn_loggedin") || "null");
-      } catch {
-        loginData = null;
-      }
-      setLoggedIn(loginData);
-
-      if (loginData?.type === "employer") {
-        let savedProfile;
-        try {
-          savedProfile = JSON.parse(localStorage.getItem("joblyn_company_profile") || "null");
-        } catch {
-          savedProfile = null;
-        }
-        if (savedProfile) {
-          setCompanyProfile(savedProfile);
-          setProfileStrength(calculateProfileStrength(savedProfile));
-        } else {
-          setCompanyProfile(null);
-          setProfileStrength(0);
-        }
-      } else {
-        setCompanyProfile(null);
-        setProfileStrength(0);
-      }
+      setLoggedIn(
+        JSON.parse(localStorage.getItem("joblyn_loggedin") || "null")
+      );
     };
-    handleStorage();
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
   }, []);
+
+  // Add profile photo state
+  const [profilePhoto, setProfilePhoto] = useState(
+    localStorage.getItem("joblyn_profile_photo") || ""
+  );
+  const [editingPhoto, setEditingPhoto] = useState(false);
+
+  // Listen for profile photo changes
+  React.useEffect(() => {
+    const handleStorage = () => {
+      setProfilePhoto(localStorage.getItem("joblyn_profile_photo") || "");
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
+
+  // Handle photo upload
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        localStorage.setItem("joblyn_profile_photo", reader.result as string);
+        setProfilePhoto(reader.result as string);
+        setEditingPhoto(false);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const featuredJobs = [
     {
@@ -196,57 +148,86 @@ const HomePage: React.FC = () => {
     { name: "Healthcare", count: "45K+", icon: "🏥" },
   ];
 
-  // Helper for jobs posted stat
-  const getPostedJobsCount = () => {
-    try {
-      return JSON.parse(localStorage.getItem("joblyn_posted_jobs") || "[]").length;
-    } catch {
-      return 0;
-    }
-  };
-
   return (
     <div className="flex">
       {/* Sidebar */}
       {loggedIn && (
         <aside
           className="w-64 fixed left-0 top-16 bg-white shadow-lg flex flex-col justify-between"
-          style={{ height: "calc(100vh - 4rem)", zIndex: 20 }} // 4rem = 64px header
+          style={{ height: "calc(100vh - 4rem)", zIndex: 20 }}
         >
-          <div className="p-6">
-            <h2 className="text-xl font-bold mb-6 text-joblyn-blue">
+          <div className="p-6 flex flex-col items-center">
+            {/* Profile Photo Circle */}
+            <div className="relative mb-4">
+              <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border-2 border-joblyn-blue">
+                {profilePhoto ? (
+                  <img
+                    src={profilePhoto}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-gray-400 text-4xl">👤</span>
+                )}
+              </div>
+              <button
+                className="absolute bottom-0 right-0 bg-joblyn-blue text-white rounded-full p-1 border border-white shadow hover:bg-blue-700 transition-colors"
+                style={{ fontSize: "0.9rem" }}
+                onClick={() => setEditingPhoto(true)}
+                title={profilePhoto ? "Edit/Replace Photo" : "Upload Photo"}
+              >
+                ✎
+              </button>
+              {editingPhoto && (
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="absolute left-0 top-0 w-full h-full opacity-0 cursor-pointer"
+                  style={{ zIndex: 10 }}
+                  onChange={handlePhotoChange}
+                  onBlur={() => setEditingPhoto(false)}
+                  autoFocus
+                />
+              )}
+            </div>
+            {/* Admin/Employer/Jobseeker Info */}
+            <div className="mb-2 text-center">
+              <div className="font-bold">
+                {loggedIn.type === "admin"
+                  ? "Admin"
+                  : loggedIn.name || "User"}
+              </div>
+              <div className="text-xs text-gray-500">
+                {loggedIn.email}
+              </div>
+              <div className="text-xs text-gray-400 mt-1">
+                ID: {loggedIn.id || "N/A"}
+              </div>
+            </div>
+            {/* My Profile Button */}
+            <button
+              onClick={() =>
+                navigate(
+                  loggedIn.type === "admin"
+                    ? "/admin-panel"
+                    : loggedIn.type === "employer"
+                    ? "/employer-dashboard"
+                    : "/jobseeker-dashboard"
+                )
+              }
+              className="mb-4 px-4 py-2 rounded border border-joblyn-blue text-joblyn-blue bg-gray-100 hover:bg-joblyn-blue hover:text-white font-bold transition-colors block w-full text-center"
+            >
               My Profile
-            </h2>
-            {loggedIn.type === "jobseeker" && (
-              <a
-                href="/jobseeker-dashboard"
-                className="mb-4 px-4 py-2 rounded border border-joblyn-blue text-joblyn-blue bg-gray-100 hover:bg-joblyn-blue hover:text-white font-bold transition-colors block"
-              >
-                Jobseeker Dashboard
-              </a>
-            )}
-            {loggedIn.type === "employer" && (
-              <a
-                href="/employer-dashboard"
-                className="mb-4 px-4 py-2 rounded border border-joblyn-blue text-joblyn-blue bg-gray-100 hover:bg-joblyn-blue hover:text-white font-bold transition-colors block"
-              >
-                Employer Dashboard
-              </a>
-            )}
+            </button>
           </div>
-
-          {/* Logout Button */}
-          <div className="p-6 border-t border-gray-200">
+          <div className="p-6">
             <button
               onClick={() => {
                 localStorage.removeItem("joblyn_loggedin");
-                localStorage.removeItem("joblyn_company_profile");
                 setLoggedIn(null);
-                setCompanyProfile(null);
-                setProfileStrength(0);
                 navigate("/");
               }}
-              className="w-full px-4 py-2 rounded-lg border border-red-400 text-red-500 bg-red-50 hover:bg-red-500 hover:text-white font-semibold transition-colors"
+              className="w-full px-4 py-2 rounded border border-red-400 text-red-500 bg-gray-100 hover:bg-red-500 hover:text-white font-bold transition-colors"
             >
               Logout
             </button>
@@ -256,26 +237,28 @@ const HomePage: React.FC = () => {
 
       {/* Main Content */}
       <div className={`flex-1 ${loggedIn ? "ml-64" : ""}`}>
-        {/* Add login/register buttons */}
-        <div className="flex justify-end p-4 bg-white">
-          <button
-            className="bg-joblyn-blue text-white px-4 py-2 rounded mr-2 font-bold"
-            onClick={() => {
-              setAuthType("jobseeker");
-              setShowAuth(true);
-            }}
-          >
-            Jobseeker Login/Register
-          </button>
-          <button
-            className="bg-joblyn-blue text-white px-4 py-2 rounded font-bold"
-            onClick={() => {
-              setAuthType("employer");
-              setShowAuth(true);
-            }}
-          >
-            Employer Login/Register
-          </button>
+        {/* Remove Admin Login button from here */}
+        <div className="w-full bg-white shadow">
+          <div className="container mx-auto flex justify-end items-center py-4 px-4">
+            <button
+              className="bg-joblyn-blue text-white px-4 py-2 rounded mr-2 font-bold"
+              onClick={() => {
+                setAuthType("employer");
+                setShowAuth(true);
+              }}
+            >
+              Employer Login/Register
+            </button>
+            <button
+              className="bg-joblyn-blue text-white px-4 py-2 rounded font-bold"
+              onClick={() => {
+                setAuthType("jobseeker");
+                setShowAuth(true);
+              }}
+            >
+              Jobseeker Login/Register
+            </button>
+          </div>
         </div>
 
         {/* Show AuthPage modal */}
@@ -301,7 +284,7 @@ const HomePage: React.FC = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
               <div className="text-center">
                 <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <TrendingUp className="w-8 h-8 text-blue-600" />
+                  <TrendingUp className="w-8 h-8 text-joblyn-blue" />
                 </div>
                 <h3 className="text-3xl font-bold text-gray-800">15L+</h3>
                 <p className="text-gray-600">Active Jobs</p>
@@ -339,17 +322,19 @@ const HomePage: React.FC = () => {
                 <h2 className="text-3xl font-bold text-gray-800 mb-2">
                   Featured Jobs
                 </h2>
-                <p className="text-gray-600">Hand-picked opportunities from top companies</p>
+                <p className="text-gray-600">
+                  Hand-picked opportunities from top companies
+                </p>
               </div>
               <a
                 href="/jobs"
-                className="text-blue-600 hover:underline flex items-center font-medium"
+                className="text-joblyn-blue hover:underline flex items-center font-medium"
               >
                 View All <ChevronRight size={20} />
               </a>
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredJobs.map(job => (
+              {featuredJobs.map((job) => (
                 <JobCard key={job.id} {...job} />
               ))}
             </div>
@@ -369,8 +354,12 @@ const HomePage: React.FC = () => {
                   className="bg-gray-50 rounded-lg p-6 text-center hover:shadow-md transition-shadow cursor-pointer"
                 >
                   <div className="text-4xl mb-3">{category.icon}</div>
-                  <h3 className="font-semibold text-gray-800">{category.name}</h3>
-                  <p className="text-gray-600 text-sm mt-1">{category.count} Jobs</p>
+                  <h3 className="font-semibold text-gray-800">
+                    {category.name}
+                  </h3>
+                  <p className="text-gray-600 text-sm mt-1">
+                    {category.count} Jobs
+                  </p>
                 </div>
               ))}
             </div>
@@ -385,17 +374,19 @@ const HomePage: React.FC = () => {
                 <h2 className="text-3xl font-bold text-gray-800 mb-2">
                   Top Companies Hiring
                 </h2>
-                <p className="text-gray-600">Join India's leading organizations</p>
+                <p className="text-gray-600">
+                  Join India's leading organizations
+                </p>
               </div>
               <a
                 href="/companies"
-                className="text-blue-600 hover:underline flex items-center font-medium"
+                className="text-joblyn-blue hover:underline flex items-center font-medium"
               >
                 View All <ChevronRight size={20} />
               </a>
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {topCompanies.map(company => (
+              {topCompanies.map((company) => (
                 <CompanyCard key={company.id} {...company} />
               ))}
             </div>
@@ -411,27 +402,41 @@ const HomePage: React.FC = () => {
             <div className="grid md:grid-cols-3 gap-8">
               <div className="text-center">
                 <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Sparkles className="w-10 h-10 text-blue-600" />
+                  <Sparkles className="w-10 h-10 text-joblyn-blue" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Resume Writing</h3>
-                <p className="text-gray-600 mb-4">Get a professionally written resume that stands out</p>
-                <button className="text-blue-600 hover:underline font-medium">Learn More →</button>
+                <p className="text-gray-600 mb-4">
+                  Get a professionally written resume that stands out
+                </p>
+                <button className="text-joblyn-blue hover:underline font-medium">
+                  Learn More →
+                </button>
               </div>
               <div className="text-center">
                 <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Target className="w-10 h-10 text-green-600" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Priority Applicant</h3>
-                <p className="text-gray-600 mb-4">Be a priority applicant & increase your chance of selection</p>
-                <button className="text-blue-600 hover:underline font-medium">Learn More →</button>
+                <h3 className="text-xl font-semibold mb-2">
+                  Priority Applicant
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  Be a priority applicant & increase your chance of selection
+                </p>
+                <button className="text-joblyn-blue hover:underline font-medium">
+                  Learn More →
+                </button>
               </div>
               <div className="text-center">
                 <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <BookOpen className="w-10 h-10 text-orange-600" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Career Guidance</h3>
-                <p className="text-gray-600 mb-4">Get personalized career guidance from industry experts</p>
-                <button className="text-blue-600 hover:underline font-medium">Learn More →</button>
+                <p className="text-gray-600 mb-4">
+                  Get personalized career guidance from industry experts
+                </p>
+                <button className="text-joblyn-blue hover:underline font-medium">
+                  Learn More →
+                </button>
               </div>
             </div>
           </div>
