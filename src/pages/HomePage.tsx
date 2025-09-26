@@ -193,9 +193,13 @@ const HomePage: React.FC = () => {
             {/* Admin/Employer/Jobseeker Info */}
             <div className="mb-2 text-center">
               <div className="font-bold">
-                {loggedIn.type === "admin" ? "Admin" : loggedIn.name || "User"}
+                {loggedIn.type === "admin"
+                  ? "Admin"
+                  : loggedIn.name || "User"}
               </div>
-              <div className="text-xs text-gray-500">{loggedIn.email}</div>
+              <div className="text-xs text-gray-500">
+                {loggedIn.email}
+              </div>
               <div className="text-xs text-gray-400 mt-1">
                 ID: {loggedIn.id || "N/A"}
               </div>
