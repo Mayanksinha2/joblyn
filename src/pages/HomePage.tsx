@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import AuthPage from "./AuthPage";
 import SearchBar from "../components/Search/SearchBar";
 import JobCard from "../components/Jobs/JobCard";
@@ -35,6 +35,35 @@ const HomePage: React.FC = () => {
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
   }, []);
+
+  // Add profile photo state
+  const [profilePhoto, setProfilePhoto] = useState(
+    localStorage.getItem("joblyn_profile_photo") || ""
+  );
+  const [editingPhoto, setEditingPhoto] = useState(false);
+
+  // Listen for profile photo changes
+  React.useEffect(() => {
+    const handleStorage = () => {
+      setProfilePhoto(localStorage.getItem("joblyn_profile_photo") || "");
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
+
+  // Handle photo upload
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        localStorage.setItem("joblyn_profile_photo", reader.result as string);
+        setProfilePhoto(reader.result as string);
+        setEditingPhoto(false);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const featuredJobs = [
     {
@@ -125,28 +154,67 @@ const HomePage: React.FC = () => {
       {loggedIn && (
         <aside
           className="w-64 fixed left-0 top-16 bg-white shadow-lg flex flex-col justify-between"
-          style={{ height: "calc(100vh - 4rem)", zIndex: 20 }} // 4rem = 64px header
+          style={{ height: "calc(100vh - 4rem)", zIndex: 20 }}
         >
-          <div className="p-6">
-            <h2 className="text-xl font-bold mb-6 text-joblyn-blue">
+          <div className="p-6 flex flex-col items-center">
+            {/* Profile Photo Circle */}
+            <div className="relative mb-4">
+              <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border-2 border-joblyn-blue">
+                {profilePhoto ? (
+                  <img
+                    src={profilePhoto}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-gray-400 text-4xl">👤</span>
+                )}
+              </div>
+              <button
+                className="absolute bottom-0 right-0 bg-joblyn-blue text-white rounded-full p-1 border border-white shadow hover:bg-blue-700 transition-colors"
+                style={{ fontSize: "0.9rem" }}
+                onClick={() => setEditingPhoto(true)}
+                title={profilePhoto ? "Edit/Replace Photo" : "Upload Photo"}
+              >
+                ✎
+              </button>
+              {editingPhoto && (
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="absolute left-0 top-0 w-full h-full opacity-0 cursor-pointer"
+                  style={{ zIndex: 10 }}
+                  onChange={handlePhotoChange}
+                  onBlur={() => setEditingPhoto(false)}
+                  autoFocus
+                />
+              )}
+            </div>
+            {/* Admin/Employer/Jobseeker Info */}
+            <div className="mb-2 text-center">
+              <div className="font-bold">
+                {loggedIn.type === "admin" ? "Admin" : loggedIn.name || "User"}
+              </div>
+              <div className="text-xs text-gray-500">{loggedIn.email}</div>
+              <div className="text-xs text-gray-400 mt-1">
+                ID: {loggedIn.id || "N/A"}
+              </div>
+            </div>
+            {/* My Profile Button */}
+            <button
+              onClick={() =>
+                navigate(
+                  loggedIn.type === "admin"
+                    ? "/admin-panel"
+                    : loggedIn.type === "employer"
+                    ? "/employer-dashboard"
+                    : "/jobseeker-dashboard"
+                )
+              }
+              className="mb-4 px-4 py-2 rounded border border-joblyn-blue text-joblyn-blue bg-gray-100 hover:bg-joblyn-blue hover:text-white font-bold transition-colors block w-full text-center"
+            >
               My Profile
-            </h2>
-            {loggedIn.type === "jobseeker" && (
-              <a
-                href="/jobseeker-dashboard"
-                className="mb-4 px-4 py-2 rounded border border-joblyn-blue text-joblyn-blue bg-gray-100 hover:bg-joblyn-blue hover:text-white font-bold transition-colors block"
-              >
-                Jobseeker Dashboard
-              </a>
-            )}
-            {loggedIn.type === "employer" && (
-              <a
-                href="/employer-dashboard"
-                className="mb-4 px-4 py-2 rounded border border-joblyn-blue text-joblyn-blue bg-gray-100 hover:bg-joblyn-blue hover:text-white font-bold transition-colors block"
-              >
-                Employer Dashboard
-              </a>
-            )}
+            </button>
           </div>
           <div className="p-6">
             <button
@@ -165,26 +233,28 @@ const HomePage: React.FC = () => {
 
       {/* Main Content */}
       <div className={`flex-1 ${loggedIn ? "ml-64" : ""}`}>
-        {/* Add login/register buttons */}
-        <div className="flex justify-end p-4 bg-white">
-          <button
-            className="bg-joblyn-blue text-white px-4 py-2 rounded mr-2 font-bold"
-            onClick={() => {
-              setAuthType("jobseeker");
-              setShowAuth(true);
-            }}
-          >
-            Jobseeker Login/Register
-          </button>
-          <button
-            className="bg-joblyn-blue text-white px-4 py-2 rounded font-bold"
-            onClick={() => {
-              setAuthType("employer");
-              setShowAuth(true);
-            }}
-          >
-            Employer Login/Register
-          </button>
+        {/* Remove Admin Login button from here */}
+        <div className="w-full bg-white shadow">
+          <div className="container mx-auto flex justify-end items-center py-4 px-4">
+            <button
+              className="bg-joblyn-blue text-white px-4 py-2 rounded mr-2 font-bold"
+              onClick={() => {
+                setAuthType("employer");
+                setShowAuth(true);
+              }}
+            >
+              Employer Login/Register
+            </button>
+            <button
+              className="bg-joblyn-blue text-white px-4 py-2 rounded font-bold"
+              onClick={() => {
+                setAuthType("jobseeker");
+                setShowAuth(true);
+              }}
+            >
+              Jobseeker Login/Register
+            </button>
+          </div>
         </div>
 
         {/* Show AuthPage modal */}

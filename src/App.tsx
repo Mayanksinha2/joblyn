@@ -8,6 +8,9 @@ import CompaniesPage from "./pages/CompaniesPage";
 import ProfilePage from "./pages/ProfilePage";
 import EmployerDashboard from "./pages/EmployerDashboard";
 import JobSeekerDashboard from "./pages/JobSeekerDashboard";
+import PostJob from "./pages/PostJob";
+import AdminLogin from "./pages/AdminLogin";
+import AdminPanel from "./pages/AdminPanel";
 
 function App() {
   return (
@@ -25,6 +28,9 @@ function App() {
               path="/jobseeker-dashboard"
               element={<JobSeekerDashboard />}
             />
+            <Route path="/post-job" element={<PostJob />} />
+            <Route path="/admin-login" element={<AdminLogin />} />
+            <Route path="/admin-panel" element={<AdminPanel />} />
           </Routes>
         </main>
         <Footer />

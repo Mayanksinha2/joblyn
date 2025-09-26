@@ -1,20 +1,26 @@
 import React, { useState } from "react";
-import { X, Mail, Lock, User, Phone, Eye, EyeOff } from "lucide-react";
+import { X, Mail, Lock, User, Phone, Eye, EyeOff, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
-  loginType: "jobseeker" | "employer";
+  loginType: "jobseeker" | "employer" | "admin";
 }
+
+const ADMIN_EMAIL = "admin@joblyn.com";
+const ADMIN_PASSWORD = "admin123"; // Change for production
 
 const LoginModal: React.FC<LoginModalProps> = ({
   isOpen,
   onClose,
-  loginType,
+  loginType: initialType,
 }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+  const [loginType, setLoginType] = useState<
+    "jobseeker" | "employer" | "admin"
+  >(initialType);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -29,10 +35,41 @@ const LoginModal: React.FC<LoginModalProps> = ({
 
   // Utility functions for local storage
   const getStorageKey = () =>
-    loginType === "jobseeker" ? "joblyn_jobseekers" : "joblyn_employers";
+    loginType === "jobseeker"
+      ? "joblyn_jobseekers"
+      : loginType === "employer"
+      ? "joblyn_employers"
+      : "joblyn_admins";
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (loginType === "admin") {
+      // Admin login logic (hardcoded for demo)
+      if (
+        formData.email === ADMIN_EMAIL &&
+        formData.password === ADMIN_PASSWORD
+      ) {
+        localStorage.setItem(
+          "joblyn_loggedin",
+          JSON.stringify({
+            type: "admin",
+            email: formData.email,
+            name: "Admin",
+          })
+        );
+        setMessage("Admin login successful!");
+        setTimeout(() => {
+          setMessage("");
+          onClose();
+          navigate("/admin-panel");
+        }, 1000);
+      } else {
+        setMessage("Invalid admin credentials.");
+      }
+      return;
+    }
+
     const key = getStorageKey();
     const users = JSON.parse(localStorage.getItem(key) || "[]");
 
@@ -45,7 +82,12 @@ const LoginModal: React.FC<LoginModalProps> = ({
       if (user) {
         localStorage.setItem(
           "joblyn_loggedin",
-          JSON.stringify({ type: loginType, email: formData.email })
+          JSON.stringify({
+            type: loginType,
+            email: formData.email,
+            name: user.name,
+            id: user.id,
+          })
         );
         setMessage("Login successful!");
         setTimeout(() => {
@@ -61,7 +103,7 @@ const LoginModal: React.FC<LoginModalProps> = ({
         setMessage("Invalid credentials. Please try again.");
       }
     } else {
-      // Registration logic
+      // Registration logic (not for admin)
       if (users.find((u: any) => u.email === formData.email)) {
         setMessage("User already exists with this email.");
         return;
@@ -71,6 +113,7 @@ const LoginModal: React.FC<LoginModalProps> = ({
         password: formData.password,
         name: formData.name,
         mobile: formData.mobile,
+        id: Date.now(),
       };
       users.push(newUser);
       localStorage.setItem(key, JSON.stringify(users));
@@ -97,7 +140,9 @@ const LoginModal: React.FC<LoginModalProps> = ({
             <p className="text-gray-600 text-sm mt-1">
               {loginType === "jobseeker"
                 ? "Find your dream job"
-                : "Hire top talent"}
+                : loginType === "employer"
+                ? "Hire top talent"
+                : "Admin access"}
             </p>
           </div>
           <button
@@ -108,8 +153,56 @@ const LoginModal: React.FC<LoginModalProps> = ({
           </button>
         </div>
 
+        {/* Login type tabs */}
+        <div className="flex justify-center mb-6 space-x-2">
+          <button
+            onClick={() => {
+              setLoginType("employer");
+              setIsLogin(true);
+              setMessage("");
+            }}
+            className={`px-4 py-2 rounded-t-lg font-medium ${
+              loginType === "employer"
+                ? "bg-joblyn-blue text-white"
+                : "bg-gray-100 text-gray-700"
+            }`}
+          >
+            Employer
+          </button>
+          <button
+            onClick={() => {
+              setLoginType("jobseeker");
+              setIsLogin(true);
+              setMessage("");
+            }}
+            className={`px-4 py-2 rounded-t-lg font-medium ${
+              loginType === "jobseeker"
+                ? "bg-joblyn-blue text-white"
+                : "bg-gray-100 text-gray-700"
+            }`}
+          >
+            Jobseeker
+          </button>
+          <button
+            onClick={() => {
+              setLoginType("admin");
+              setIsLogin(true);
+              setMessage("");
+            }}
+            className={`px-4 py-2 rounded-t-lg font-medium ${
+              loginType === "admin"
+                ? "bg-joblyn-blue text-white"
+                : "bg-gray-100 text-gray-700"
+            }`}
+          >
+            <Shield className="inline-block mr-1" size={18} />
+            Admin
+          </button>
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-4">
-          {!isLogin && (
+          {/* Registration fields (not for admin) */}
+          {!isLogin && loginType !== "admin" && (
             <>
               <div className="relative">
                 <User
@@ -182,7 +275,8 @@ const LoginModal: React.FC<LoginModalProps> = ({
             </button>
           </div>
 
-          {isLogin && (
+          {/* Remember me and forgot password (not for admin) */}
+          {isLogin && loginType !== "admin" && (
             <div className="flex items-center justify-between">
               <label className="flex items-center">
                 <input
@@ -203,7 +297,7 @@ const LoginModal: React.FC<LoginModalProps> = ({
 
           <button
             type="submit"
-            className="w-full bg-joblyn-blue text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            className="w-full bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-blue-700 hover:text-white transition-colors font-medium"
           >
             {isLogin ? "Login" : "Register"}
           </button>
@@ -215,54 +309,62 @@ const LoginModal: React.FC<LoginModalProps> = ({
           </div>
         )}
 
-        <div className="mt-6">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
+        {/* Social login (not for admin) */}
+        {loginType !== "admin" && (
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-white text-gray-500">
+                  Or continue with
+                </span>
+              </div>
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-gray-500">
-                Or continue with
-              </span>
+
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <button className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                <img
+                  src="https://www.svgrepo.com/show/475656/google-color.svg"
+                  alt="Google"
+                  className="w-5 h-5 mr-2"
+                />
+                Google
+              </button>
+              <button className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                <img
+                  src="https://www.svgrepo.com/show/475647/facebook-color.svg"
+                  alt="Facebook"
+                  className="w-5 h-5 mr-2"
+                />
+                Facebook
+              </button>
             </div>
           </div>
+        )}
 
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <button className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-              <img
-                src="https://www.svgrepo.com/show/475656/google-color.svg"
-                alt="Google"
-                className="w-5 h-5 mr-2"
-              />
-              Google
-            </button>
-            <button className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-              <img
-                src="https://www.svgrepo.com/show/475647/facebook-color.svg"
-                alt="Facebook"
-                className="w-5 h-5 mr-2"
-              />
-              Facebook
-            </button>
+        {/* Switch between login/register (not for admin) */}
+        {loginType !== "admin" && (
+          <div className="mt-6 text-center">
+            <p className="text-gray-600">
+              {isLogin
+                ? "Don't have an account? "
+                : "Already have an account? "}
+              <button
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setMessage("");
+                }}
+                className="text-joblyn-blue hover:underline font-medium"
+              >
+                {isLogin ? "Register now" : "Login"}
+              </button>
+            </p>
           </div>
-        </div>
+        )}
 
-        <div className="mt-6 text-center">
-          <p className="text-gray-600">
-            {isLogin ? "Don't have an account? " : "Already have an account? "}
-            <button
-              onClick={() => {
-                setIsLogin(!isLogin);
-                setMessage("");
-              }}
-              className="text-joblyn-blue hover:underline font-medium"
-            >
-              {isLogin ? "Register now" : "Login"}
-            </button>
-          </p>
-        </div>
-
-        {!isLogin && (
+        {!isLogin && loginType !== "admin" && (
           <p className="mt-4 text-xs text-gray-500 text-center">
             By registering, you agree to our{" "}
             <a href="#" className="text-joblyn-blue hover:underline">
